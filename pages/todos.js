@@ -2,7 +2,8 @@ import Head from "next/head";
 import Layout from "../components/layout";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import style from "./todos.module.css";
 
 async function fetchTodos(url, page = "roam-todo") {
   const res = await fetch(url, {
@@ -66,22 +67,29 @@ function Todo({ todo }) {
     setString(todo.string.slice(m[0].length));
   }, [todo]);
 
-  useEffect(() => {
+  const toggle = useCallback(() => {
+    setChecked((checked) => !checked);
     trigger([uid, `{{[[${checked ? "TODO" : "DONE"}]]}} ${string}`]);
   }, [checked, string]);
 
+  const updateString = useCallback(
+    (e) => {
+      const newString = e.target.value;
+      setString(newString);
+      trigger([uid, `{{[[${checked ? "DONE" : "TODO"}]]}} ${newString}`]);
+    },
+    [checked]
+  );
+
   return (
-    <form>
+    <form className={style.todo}>
       <label>
+        <input type="checkbox" checked={checked} onChange={toggle} />
         <input
-          type="checkbox"
-          checked={checked}
-          // onInput={() => setChecked((checked) => !checked)}
-        />
-        <input
+          className={style["todo-string"]}
           type="text"
           value={string}
-          onChange={(e) => setString(e.target.value)}
+          onChange={updateString}
           onFocus={() => setEditing(true)}
           onBlur={() => setEditing(false)}
         />
@@ -95,7 +103,7 @@ export default function Todos() {
     data: todos,
     error,
     isLoading,
-  } = useSWR("/api/q", fetchTodos, { refreshInterval: 1000, loadingTimeout: 1000 });
+  } = useSWR("/api/q", fetchTodos, { refreshInterval: 5000, loadingTimeout: 1000 });
   return (
     <Layout home>
       <Head>
