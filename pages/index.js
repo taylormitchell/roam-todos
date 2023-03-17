@@ -8,7 +8,12 @@ export default function Home() {
       <Head>
         <title>{siteTitle}</title>
       </Head>
-      <Link href="/todos">Todos</Link>
+      <h1>Todo lists</h1>
+      <ul>
+        <li>
+          <Link href="/todos">Todos</Link>
+        </li>
+      </ul>
     </Layout>
   );
 }

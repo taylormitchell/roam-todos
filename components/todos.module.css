@@ -5,13 +5,7 @@ form.todo {
 }
 
 .todo-string {
-  flex: 1;
-  min-width: 0;
-  margin-left: 8px;
-  padding: 4px;
   border: none;
-  border-radius: 2px;
   outline: none;
   background-color: transparent;
-  white-space: pre-wrap;
 }

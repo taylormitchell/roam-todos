@@ -1,8 +1,8 @@
 import Head from "next/head";
-import Layout from "../components/layout";
+import Layout from "./layout";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import style from "./todos.module.css";
 
 async function fetchTodos(url, page = "roam-todo") {
@@ -23,7 +23,6 @@ async function fetchTodos(url, page = "roam-todo") {
                 [?page :node/title "${page}"]
                 (or
                     [?refs :node/title "TODO"]
-                    [?refs :node/title "DONE"]
                 )
         ]`,
     }),
@@ -52,10 +51,10 @@ async function updateTodo(url, { arg }) {
 
 function Todo({ todo }) {
   const { trigger } = useSWRMutation("/api/write", updateTodo);
+  const ref = useRef();
   const uid = todo.uid;
 
   const [checked, setChecked] = useState(false);
-  const [string, setString] = useState(todo.string);
   const [editing, setEditing] = useState(false);
 
   // Set string and checked state from todo string
@@ -64,52 +63,62 @@ function Todo({ todo }) {
     const m = todo.string.match(/^\{\{\[\[(.+)\]\]\}\}\s*/);
     if (!m) return;
     setChecked(m[1] === "DONE");
-    setString(todo.string.slice(m[0].length));
+    ref.current.innerText = todo.string.slice(m[0].length);
   }, [todo]);
 
   const toggle = useCallback(() => {
+    if (!ref.current) return;
     setChecked((checked) => !checked);
-    trigger([uid, `{{[[${checked ? "TODO" : "DONE"}]]}} ${string}`]);
-  }, [checked, string]);
+    trigger([uid, `{{[[${checked ? "TODO" : "DONE"}]]}} ${ref.current.innerText}`]);
+  }, [checked, ref.current]);
 
   const updateString = useCallback(
-    (e) => {
-      const newString = e.target.value;
-      setString(newString);
+    (newString) => {
       trigger([uid, `{{[[${checked ? "DONE" : "TODO"}]]}} ${newString}`]);
     },
     [checked]
   );
 
   return (
-    <form className={style.todo}>
-      <label>
-        <input type="checkbox" checked={checked} onChange={toggle} />
-        <input
-          className={style["todo-string"]}
-          type="text"
-          value={string}
-          onChange={updateString}
-          onFocus={() => setEditing(true)}
-          onBlur={() => setEditing(false)}
-        />
-      </label>
-    </form>
+    <>
+      <input type="checkbox" checked={checked} onChange={toggle} />
+      <span
+        className={style["todo-string"]}
+        ref={ref}
+        contentEditable
+        onFocus={() => setEditing(true)}
+        onBlur={() => setEditing(false)}
+        onInput={(e) => {
+          updateString(e.target.innerText);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            updateString(e.target.innerText);
+            e.target.blur();
+          }
+        }}
+      ></span>
+    </>
   );
 }
 
-export default function Todos() {
+export default function Todos({ page }) {
   const {
     data: todos,
     error,
     isLoading,
-  } = useSWR("/api/q", fetchTodos, { refreshInterval: 5000, loadingTimeout: 1000 });
+  } = useSWR("/api/q", (url) => fetchTodos(url, page), {
+    refreshInterval: 5000,
+    loadingTimeout: 1000,
+  });
+
   return (
     <Layout home>
       <Head>
-        <title>Todos</title>
+        <title>{page}</title>
       </Head>
-      <h1>Todos</h1>
+      <h1>{page}</h1>
       <ul>
         {isLoading && <li>Loading...</li>}
         {error && <li>Error: {error.message}</li>}
