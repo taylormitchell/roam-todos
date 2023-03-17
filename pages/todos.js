@@ -50,51 +50,43 @@ async function updateTodo(url, { arg }) {
 }
 
 function Todo({ todo }) {
-  const ref = useRef();
   const { trigger } = useSWRMutation("/api/write", updateTodo);
   const uid = todo.uid;
 
   const [checked, setChecked] = useState(false);
+  const [string, setString] = useState(todo.string);
+  const [editing, setEditing] = useState(false);
 
   // Set string and checked state from todo string
   useEffect(() => {
+    if (editing) return;
     const m = todo.string.match(/^\{\{\[\[(.+)\]\]\}\}\s*/);
     if (!m) return;
     setChecked(m[1] === "DONE");
-    ref.current.innerText = todo.string.slice(m[0].length);
+    setString(todo.string.slice(m[0].length));
   }, [todo]);
 
-  const toggle = useCallback(() => {
-    if (!ref.current) return;
-    setChecked((checked) => !checked);
-    trigger([uid, `{{[[${checked ? "TODO" : "DONE"}]]}} ${ref.current.innerText}`]);
-  }, [checked, ref.current]);
-
-  const updateString = useCallback(
-    (newString) => {
-      trigger([uid, `{{[[${checked ? "DONE" : "TODO"}]]}} ${newString}`]);
-    },
-    [checked]
-  );
+  useEffect(() => {
+    trigger([uid, `{{[[${checked ? "TODO" : "DONE"}]]}} ${string}`]);
+  }, [checked, string]);
 
   return (
-    <>
-      <input type="checkbox" checked={checked} onChange={toggle} />
-      <span
-        ref={ref}
-        contentEditable
-        onBlur={(e) => {
-          updateString(e.target.innerText);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            updateString(e.target.innerText);
-            e.target.blur();
-          }
-        }}
-      ></span>
-    </>
+    <form>
+      <label>
+        <input
+          type="checkbox"
+          checked={checked}
+          // onInput={() => setChecked((checked) => !checked)}
+        />
+        <input
+          type="text"
+          value={string}
+          onChange={(e) => setString(e.target.value)}
+          onFocus={() => setEditing(true)}
+          onBlur={() => setEditing(false)}
+        />
+      </label>
+    </form>
   );
 }
 
