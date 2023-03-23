@@ -108,17 +108,13 @@ export default function Todos({ page }) {
     data: todos,
     error,
     isLoading,
-  } = useSWR("/api/q", (url) => fetchTodos(url, page), {
+  } = useSWR(["/api/q", page], ([url, page]) => fetchTodos(url, page), {
     refreshInterval: 5000,
     loadingTimeout: 1000,
   });
 
   return (
-    <Layout home>
-      <Head>
-        <title>{page}</title>
-      </Head>
-      <h1>{page}</h1>
+    <>
       <ul>
         {isLoading && <li>Loading...</li>}
         {error && <li>Error: {error.message}</li>}
@@ -131,6 +127,6 @@ export default function Todos({ page }) {
               </li>
             ))}
       </ul>
-    </Layout>
+    </>
   );
 }
