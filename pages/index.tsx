@@ -28,6 +28,9 @@ export default function Home() {
         <li>Ideaflow</li>
         <li>Personal work</li>
       </ul>
+      <h2>
+        <Link href="/roam">Roam</Link>
+      </h2>
     </Layout>
   );
 }
