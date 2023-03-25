@@ -1,0 +1,22 @@
+.block {
+  position: relative;
+}
+
+.toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  background: transparent;
+  outline: none;
+  border: none;
+}
+
+.toggle::after {
+  content: "◀";
+  font-size: smaller;
+}
+
+.toggle.expanded {
+  transform: rotate(-90deg);
+}
