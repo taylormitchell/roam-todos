@@ -7,5 +7,5 @@ ssh $DROPLET_USER@$DROPLET_IP \
     "rm roam-todos.tar.gz && "\
     "cd code/roam-todos && "\
     "PATH=/home/$DROPLET_USER/.nvm/versions/node/v17.7.1/bin:$PATH && "\
-    "pm2 delete roam-todos && "\ 
+    "pm2 delete roam-todos && "\
     "pm2 start \"next start -p 3034\" --name \"roam-todos\""
