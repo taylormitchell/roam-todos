@@ -1,5 +1,5 @@
 import invariant from "tiny-invariant";
-import { BlockDb, BlockWithChildren, BlockWithChildrenUids, Block } from "./model";
+import { BlockDb, BlockWithChildren, Block } from "./model";
 
 const token = process.env.ROAM_TOKEN;
 invariant(token !== undefined, "ROAM_TOKEN is not set");
