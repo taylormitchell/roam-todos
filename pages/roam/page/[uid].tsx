@@ -1,9 +1,10 @@
 import Layout from "../../../components/layout";
 import { useState } from "react";
-import { Block, Page, PageWithChildren } from "../../../lib/model";
+import { Block, Page } from "../../../lib/model";
 import { BlockView } from "../../../components/Block";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import MobileKeyboardBar from "../../../components/MobileKeyboardBar";
+import Link from "next/link";
 
 export const getServerSideProps = async ({ params }) => {
   return {
@@ -32,14 +33,16 @@ function deepCopy(obj) {
 export default function PageView({ uid }) {
   const {
     data: page,
-    mutate,
+    mutate: mutatePage,
     error,
     isLoading,
   } = useSWR<Page>(["/api/page", uid], ([url, page]) => fetchPage(url, uid), {
     refreshInterval: 5000,
     loadingTimeout: 1000,
   });
+  const { mutate } = useSWRConfig();
   const [activeBlock, setActiveBlock] = useState<string | null>(null);
+  // const [activeBlock, setActiveBlock] = useState<HTMLDivElement>();
 
   function indent(uid: string) {
     let sibling = null;
@@ -64,7 +67,7 @@ export default function PageView({ uid }) {
       }
     }
     if (sibling) {
-      mutate(newPage, { revalidate: false });
+      mutatePage(newPage, { revalidate: false });
       fetch("/api/write", {
         method: "POST",
         headers: {
@@ -134,7 +137,7 @@ export default function PageView({ uid }) {
     }
     const [newPage] = recurse(page);
     if (newParentUid !== null && newOrder !== null) {
-      mutate(newPage, { revalidate: false });
+      mutatePage(newPage, { revalidate: false });
       fetch("/api/write", {
         method: "POST",
         headers: {
@@ -162,6 +165,7 @@ export default function PageView({ uid }) {
   }
   return (
     <Layout>
+      <Link href="/roam">Back</Link>
       <h2>{page.title}</h2>
       {page.children && (
         <ul>

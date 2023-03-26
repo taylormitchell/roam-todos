@@ -1,5 +1,6 @@
 // components/MobileKeyboardBar.js
 import { useRef, useState, useEffect } from "react";
+import { showKeyboardBar } from "../lib/env";
 
 const MobileKeyboardBar = ({ indent, dedent }: { indent: () => void; dedent: () => void }) => {
   const height = 50;
@@ -7,7 +8,8 @@ const MobileKeyboardBar = ({ indent, dedent }: { indent: () => void; dedent: () 
   useEffect(() => {
     const handleResize = () => {
       if (!bar) return;
-      const show = window.visualViewport.height / window.screen.availHeight < 0.7;
+      const show =
+        showKeyboardBar || window.visualViewport.height / window.screen.availHeight < 0.7;
       if (show) {
         bar.style.display = "flex";
         const top = window.visualViewport.pageTop + window.visualViewport.height - height;
@@ -16,6 +18,7 @@ const MobileKeyboardBar = ({ indent, dedent }: { indent: () => void; dedent: () 
         bar.style.display = "none";
       }
     };
+    handleResize();
     window.visualViewport.addEventListener("resize", handleResize);
     window.visualViewport.addEventListener("scroll", handleResize);
     window.addEventListener("click", handleResize);

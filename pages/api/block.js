@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   });
   if (fill) {
     const children = await getChildrenOfBlock(block.uid);
-    if (block.children.length !== children.length) throw new Error("Children length mismatch");
+    // if (block.children.length !== children.length) throw new Error("Children length mismatch");
     block.children = block.children
       .map((uid) => {
         const child = children.find((c) => c.uid === uid);

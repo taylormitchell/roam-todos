@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import styles from "../styles/roam.module.css";
 import { Block } from "../lib/model";
 
-async function updateBlock(url: string, { arg }) {
+export async function updateBlock(url: string, { arg }) {
   const [uid, string] = arg;
   const res = await fetch(url, {
     method: "POST",
@@ -19,6 +19,16 @@ async function updateBlock(url: string, { arg }) {
     }),
   });
   return res.json();
+}
+
+function toggleTodoString(str: string) {
+  if (str.startsWith("{{[[TODO]]}}")) {
+    return str.replace("{{[[TODO]]}}", "{{[[DONE]]}}");
+  } else if (str.startsWith("{{[[DONE]]}}")) {
+    return str.replace("{{[[DONE]]}}", "");
+  } else {
+    return "{{[[TODO]]}}" + (str[0] !== " " ? " " : "") + str;
+  }
 }
 
 export function BlockView({
@@ -49,14 +59,20 @@ export function BlockView({
     ref.current.innerText = block.string;
   }, [block]);
 
-  function updateString(str) {
+  function updateString(str: string) {
     trigger([uid, str]);
+  }
+
+  function toggleTodo() {
+    const newString = toggleTodoString(ref.current.innerText);
+    ref.current.innerText = newString;
+    updateString(newString);
   }
 
   const buttonClass = styles.toggle + " " + (isExpanded ? styles.expanded : "");
   return (
     <li>
-      <div className={styles.block}>
+      <div className={styles.block} data-uid={uid}>
         <span
           // className={style["todo-string"]}
           ref={ref}
@@ -69,8 +85,12 @@ export function BlockView({
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              updateString(e.currentTarget.innerText);
-              e.currentTarget.blur();
+              if (e.shiftKey) {
+                toggleTodo();
+              } else {
+                updateString(e.currentTarget.innerText);
+                e.currentTarget.blur();
+              }
             } else if (e.key === "Tab") {
               e.preventDefault();
               if (e.shiftKey) {

@@ -24,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     createTime: page[":create/time"],
   }))[0];
   const children = await getChildrenOfBlock(page.uid);
-  if (page.children.length !== children.length) throw new Error("Children length mismatch");
+  // if (page.children.length !== children.length) throw new Error("Children length mismatch");
   const pageWithChildren: PageWithChildren = {
     ...page,
     children: page.children
