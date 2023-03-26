@@ -35,7 +35,7 @@ export type Page = {
   id: number;
   uid: string;
   title: string;
-  children: number[];
+  children: Block[];
   editTime: number;
   createTime: number;
 };

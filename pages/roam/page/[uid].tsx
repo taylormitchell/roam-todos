@@ -1,9 +1,9 @@
 import Layout from "../../../components/layout";
-import { useEffect, useState } from "react";
-import { Block, PageWithChildren } from "../../../lib/model";
+import { useState } from "react";
+import { Block, Page, PageWithChildren } from "../../../lib/model";
 import { BlockView } from "../../../components/Block";
-import styles from "../../../styles/roam.module.css";
 import useSWR from "swr";
+import MobileKeyboardBar from "../../../components/MobileKeyboardBar";
 
 export const getServerSideProps = async ({ params }) => {
   return {
@@ -13,7 +13,7 @@ export const getServerSideProps = async ({ params }) => {
   };
 };
 
-async function fetchPage(url, uid) {
+async function fetchPage(url: string, uid: string) {
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -24,31 +24,105 @@ async function fetchPage(url, uid) {
   return await res.json();
 }
 
-export default function Page({ uid }) {
-  // const [loading, setLoading] = useState(true);
+// @todo this is a hack
+function deepCopy(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+export default function PageView({ uid }) {
   const {
     data: page,
+    mutate,
     error,
     isLoading,
-  } = useSWR(["/api/page", uid], ([url, page]) => fetchPage(url, uid), {
+  } = useSWR<Page>(["/api/page", uid], ([url, page]) => fetchPage(url, uid), {
     refreshInterval: 5000,
     loadingTimeout: 1000,
   });
-  // const [page, setPage] = useState<PageWithChildren | null>(null);
-  // useEffect(() => {
-  //   fetch("/api/page", {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({ uid }),
-  //   })
-  //     .then((res) => res.json() as Promise<PageWithChildren>)
-  //     .then((data) => {
-  //       setPage(data);
-  //       setLoading(false);
-  //     });
-  // }, []);
+  const [activeBlock, setActiveBlock] = useState<string | null>(null);
+
+  function indent(uid: string) {
+    mutate(
+      (oldPage: PageWithChildren) => {
+        const page = deepCopy(oldPage); // @todo hack
+        const parents: (Page | Block)[] = [page];
+        while (parents.length > 0) {
+          const parent = parents.shift();
+          const children = parent.children;
+          for (let i = 0; i < children.length; i++) {
+            const current = children[i];
+            if (current.uid === uid) {
+              const sibling = children[i - 1];
+              if (sibling) {
+                parent.children.splice(i, 1);
+                sibling.children.push(current);
+              }
+              return page;
+            }
+            if (current.children) {
+              parents.push(current);
+            }
+          }
+        }
+        return page;
+      },
+      { revalidate: false }
+    );
+  }
+
+  function dedent(uid: string) {
+    mutate(
+      (page: PageWithChildren) => {
+        function recurse(node: Page | Block) {
+          const children = [];
+          for (const child of node.children) {
+            if (child.uid === uid) {
+              // found block to dedent
+              return [node, child];
+            }
+            // search child for block to dedent
+            const [newChild, blockToDedent] = recurse(child);
+            if (blockToDedent === null) {
+              children.push(newChild);
+            } else {
+              // At this point, we have found the block to dedent and its
+              // parent. We need to remove the block from the parent's children
+              // and add it to the grandparent's children.
+              let grandparent = node;
+              let parent = child;
+              const newParent = {
+                ...parent,
+                children: parent.children.filter((child) => child.uid !== blockToDedent.uid),
+              };
+              const parentIndex = grandparent.children.findIndex(
+                (child) => child.uid === parent.uid
+              );
+              grandparent = {
+                ...grandparent,
+                children: [
+                  ...grandparent.children.slice(0, parentIndex),
+                  newParent,
+                  blockToDedent,
+                  ...grandparent.children.slice(parentIndex + 1),
+                ],
+              };
+              return [grandparent, null];
+            }
+          }
+          return [
+            {
+              ...node,
+              children,
+            },
+            null,
+          ];
+        }
+        const [newPage] = recurse(page);
+        return newPage;
+      },
+      { revalidate: false }
+    );
+  }
 
   if (isLoading) {
     return <p>Loading...</p>;
@@ -62,10 +136,30 @@ export default function Page({ uid }) {
       {page.children && (
         <ul>
           {page.children.map((child) => (
-            <BlockView key={child.uid} block={child} />
+            <BlockView
+              key={child.uid}
+              block={child}
+              indent={indent}
+              dedent={dedent}
+              setActiveBlock={setActiveBlock}
+            />
           ))}
         </ul>
       )}
+      <MobileKeyboardBar
+        indent={() => {
+          if (activeBlock !== null) {
+            console.log("indent");
+            indent(activeBlock);
+          }
+        }}
+        dedent={() => {
+          if (activeBlock !== null) {
+            console.log("dedent");
+            dedent(activeBlock);
+          }
+        }}
+      />
     </Layout>
   );
 }
