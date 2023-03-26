@@ -1,15 +1,13 @@
 import invariant from "tiny-invariant";
+import { NextApiRequest, NextApiResponse } from "next";
 
 const token = process.env.ROAM_TOKEN;
 invariant(token !== undefined, "ROAM_TOKEN is not set");
 
-export default async function handler(req, res) {
-  const { action, block } = req.body;
-  if (!action) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const body = req.body || {};
+  if (!body.action) {
     return res.status(400).json({ message: "Action is required" });
-  }
-  if (!block) {
-    return res.status(400).json({ message: "Block is required" });
   }
   try {
     await fetch(`https://api.roamresearch.com/api/graph/second_brain/write`, {
@@ -19,10 +17,7 @@ export default async function handler(req, res) {
         authorization: `Bearer ${token}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        action,
-        block,
-      }),
+      body: JSON.stringify(body),
     });
     return res.json({ success: true });
   } catch (error) {

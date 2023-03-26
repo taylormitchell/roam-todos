@@ -23,9 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     editTime: page[":edit/time"],
     createTime: page[":create/time"],
   }))[0];
-  console.log(page);
   const children = await getChildrenOfBlock(page.uid);
-  console.log(children);
   if (page.children.length !== children.length) throw new Error("Children length mismatch");
   const pageWithChildren: PageWithChildren = {
     ...page,

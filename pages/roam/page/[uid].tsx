@@ -42,32 +42,46 @@ export default function PageView({ uid }) {
   const [activeBlock, setActiveBlock] = useState<string | null>(null);
 
   function indent(uid: string) {
-    mutate(
-      (oldPage: PageWithChildren) => {
-        const page = deepCopy(oldPage); // @todo hack
-        const parents: (Page | Block)[] = [page];
-        while (parents.length > 0) {
-          const parent = parents.shift();
-          const children = parent.children;
-          for (let i = 0; i < children.length; i++) {
-            const current = children[i];
-            if (current.uid === uid) {
-              const sibling = children[i - 1];
-              if (sibling) {
-                parent.children.splice(i, 1);
-                sibling.children.push(current);
-              }
-              return page;
-            }
-            if (current.children) {
-              parents.push(current);
-            }
+    let sibling = null;
+    const newPage = deepCopy(page); // @todo hack
+    const parents: (Page | Block)[] = [newPage];
+    while (sibling === null && parents.length > 0) {
+      const parent = parents.shift();
+      const children = parent.children;
+      for (let i = 0; i < children.length; i++) {
+        const current = children[i];
+        if (current.uid === uid) {
+          sibling = children[i - 1];
+          if (sibling) {
+            parent.children.splice(i, 1);
+            sibling.children.push(current);
           }
+          break;
         }
-        return page;
-      },
-      { revalidate: false }
-    );
+        if (current.children) {
+          parents.push(current);
+        }
+      }
+    }
+    if (sibling) {
+      mutate(newPage, { revalidate: false });
+      fetch("/api/write", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "move-block",
+          block: {
+            uid,
+          },
+          location: {
+            "parent-uid": sibling.uid,
+            order: sibling.children.length,
+          },
+        }),
+      });
+    }
   }
 
   function dedent(uid: string) {
