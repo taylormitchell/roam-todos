@@ -157,6 +157,46 @@ export default function PageView({ uid }) {
     }
   }
 
+  // @todo this is super slow cause cache isn't updated until after
+  // revalidation happens
+  function createBelow(uid: string) {
+    const newPage = deepCopy(page); // @todo hack
+    const parents: (Page | Block)[] = [newPage];
+    while (parents.length > 0) {
+      const parent = parents.shift();
+      const children = parent.children;
+      for (let i = 0; i < children.length; i++) {
+        const current = children[i];
+        if (current.uid === uid) {
+          // const newBlock = {
+          //   string: "",
+          //   children: []
+          // };
+          // parent.children.splice(i + 1, 0, newBlock);
+          // mutatePage(newPage, { revalidate: false });
+          fetch("/api/write", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              action: "create-block",
+              block: { string: "" },
+              location: {
+                "parent-uid": parent.uid,
+                order: i + 1,
+              },
+            }),
+          }).then(() => mutatePage());
+          return;
+        }
+        if (current.children) {
+          parents.push(current);
+        }
+      }
+    }
+  }
+
   if (isLoading) {
     return <p>Loading...</p>;
   }
@@ -175,6 +215,7 @@ export default function PageView({ uid }) {
               block={child}
               indent={indent}
               dedent={dedent}
+              createBelow={createBelow}
               setActiveBlock={setActiveBlock}
             />
           ))}

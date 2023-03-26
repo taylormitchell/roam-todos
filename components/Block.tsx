@@ -36,11 +36,13 @@ export function BlockView({
   indent,
   dedent,
   setActiveBlock,
+  createBelow,
 }: {
   block: Block;
   indent: (uid: string) => void;
   dedent: (uid: string) => void;
   setActiveBlock: (uid: string) => void;
+  createBelow: (uid: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { trigger } = useSWRMutation("/api/write", updateBlock);
@@ -71,7 +73,13 @@ export function BlockView({
 
   const buttonClass = styles.toggle + " " + (isExpanded ? styles.expanded : "");
   return (
-    <li>
+    <li
+      onClick={() => {
+        if (ref.current) {
+          ref.current.focus();
+        }
+      }}
+    >
       <div className={styles.block} data-uid={uid}>
         <span
           // className={style["todo-string"]}
@@ -88,8 +96,7 @@ export function BlockView({
               if (e.shiftKey) {
                 toggleTodo();
               } else {
-                updateString(e.currentTarget.innerText);
-                e.currentTarget.blur();
+                createBelow(block.uid);
               }
             } else if (e.key === "Tab") {
               e.preventDefault();
@@ -114,6 +121,7 @@ export function BlockView({
               indent={indent}
               dedent={dedent}
               setActiveBlock={setActiveBlock}
+              createBelow={createBelow}
             />
           ))}
         </ul>
