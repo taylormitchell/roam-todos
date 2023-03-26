@@ -85,57 +85,73 @@ export default function PageView({ uid }) {
   }
 
   function dedent(uid: string) {
-    mutate(
-      (page: PageWithChildren) => {
-        function recurse(node: Page | Block) {
-          const children = [];
-          for (const child of node.children) {
-            if (child.uid === uid) {
-              // found block to dedent
-              return [node, child];
-            }
-            // search child for block to dedent
-            const [newChild, blockToDedent] = recurse(child);
-            if (blockToDedent === null) {
-              children.push(newChild);
-            } else {
-              // At this point, we have found the block to dedent and its
-              // parent. We need to remove the block from the parent's children
-              // and add it to the grandparent's children.
-              let grandparent = node;
-              let parent = child;
-              const newParent = {
-                ...parent,
-                children: parent.children.filter((child) => child.uid !== blockToDedent.uid),
-              };
-              const parentIndex = grandparent.children.findIndex(
-                (child) => child.uid === parent.uid
-              );
-              grandparent = {
-                ...grandparent,
-                children: [
-                  ...grandparent.children.slice(0, parentIndex),
-                  newParent,
-                  blockToDedent,
-                  ...grandparent.children.slice(parentIndex + 1),
-                ],
-              };
-              return [grandparent, null];
-            }
-          }
-          return [
-            {
-              ...node,
-              children,
-            },
-            null,
-          ];
+    let newParentUid = null;
+    let newOrder = null;
+    function recurse(node: Page | Block) {
+      const children = [];
+      for (const child of node.children) {
+        if (child.uid === uid) {
+          // found block to dedent
+          return [node, child];
         }
-        const [newPage] = recurse(page);
-        return newPage;
-      },
-      { revalidate: false }
-    );
+        // search child for block to dedent
+        const [newChild, blockToDedent] = recurse(child);
+        if (blockToDedent === null) {
+          children.push(newChild);
+        } else {
+          // At this point, we have found the block to dedent and its
+          // parent. We need to remove the block from the parent's children
+          // and add it to the grandparent's children.
+          // @todo this is pretty messy
+          let grandparent = node;
+          let parent = child;
+          parent = {
+            ...parent,
+            children: parent.children.filter((child) => child.uid !== blockToDedent.uid),
+          };
+          const parentIndex = grandparent.children.findIndex((child) => child.uid === parent.uid);
+          grandparent = {
+            ...grandparent,
+            children: [
+              ...grandparent.children.slice(0, parentIndex),
+              parent,
+              blockToDedent,
+              ...grandparent.children.slice(parentIndex + 1),
+            ],
+          };
+          newParentUid = grandparent.uid;
+          newOrder = parentIndex + 1;
+          return [grandparent, null];
+        }
+      }
+      return [
+        {
+          ...node,
+          children,
+        },
+        null,
+      ];
+    }
+    const [newPage] = recurse(page);
+    if (newParentUid !== null && newOrder !== null) {
+      mutate(newPage, { revalidate: false });
+      fetch("/api/write", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "move-block",
+          block: {
+            uid,
+          },
+          location: {
+            "parent-uid": newParentUid,
+            order: newOrder,
+          },
+        }),
+      });
+    }
   }
 
   if (isLoading) {
