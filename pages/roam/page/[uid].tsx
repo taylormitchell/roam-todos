@@ -283,7 +283,9 @@ export default function PageView({ uid }) {
         }}
         toggleTodo={() => {
           if (activeBlock !== null) {
-            const el = document.querySelector(`div[data-uid="${activeBlock}"] span`);
+            const el = document.querySelector(
+              `div[data-uid="${activeBlock}"] span`
+            ) as HTMLSpanElement;
             if (el) toggleTodo(activeBlock, el);
           }
         }}
