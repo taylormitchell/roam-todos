@@ -31,6 +31,16 @@ function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function toggleTodoString(str: string) {
+  if (str.startsWith("{{[[TODO]]}}")) {
+    return str.replace("{{[[TODO]]}}", "{{[[DONE]]}}");
+  } else if (str.startsWith("{{[[DONE]]}}")) {
+    return str.replace("{{[[DONE]]}}", "");
+  } else {
+    return "{{[[TODO]]}}" + (str[0] !== " " ? " " : "") + str;
+  }
+}
+
 export default function PageView({ uid }) {
   const {
     data: page,
@@ -197,32 +207,38 @@ export default function PageView({ uid }) {
     }
   }
 
-  // function updateString(uid: string, string: string) {
-  //   const newPage = deepCopy(page); // @todo hack
-  //   const q: Block[] = newPage.children;
-  //   while (q.length > 0) {
-  //     const b = q.shift();
-  //     if (b.uid === uid) {
-  //       b.string = string;
-  //       break;
-  //     }
-  //     q.push(...b.children);
-  //   }
-  //   mutatePage(newPage, { revalidate: false });
-  //   fetch("/api/write", {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({
-  //       action: "update-block",
-  //       block: {
-  //         uid,
-  //         string,
-  //       },
-  //     }),
-  //   });
-  // }
+  function updateString(uid: string, string: string) {
+    const newPage = deepCopy(page); // @todo hack
+    const q: Block[] = [...newPage.children];
+    while (q.length > 0) {
+      const b = q.shift();
+      if (b.uid === uid) {
+        b.string = string;
+        break;
+      }
+      q.push(...b.children);
+    }
+    mutatePage(newPage, { revalidate: false });
+    fetch("/api/write", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "update-block",
+        block: {
+          uid,
+          string,
+        },
+      }),
+    });
+  }
+
+  function toggleTodo(uid: string, el: HTMLSpanElement) {
+    const newString = toggleTodoString(el.innerText);
+    el.innerText = newString;
+    updateString(uid, newString);
+  }
 
   if (isLoading) {
     return <p>Loading...</p>;
@@ -245,7 +261,7 @@ export default function PageView({ uid }) {
                 dedent={dedent}
                 createBelow={createBelow}
                 setActiveBlock={setActiveBlock}
-                // updateString={updateString}
+                updateString={updateString}
               />
             ))}
           </ul>
@@ -263,6 +279,12 @@ export default function PageView({ uid }) {
           if (activeBlock !== null) {
             console.log("dedent");
             dedent(activeBlock);
+          }
+        }}
+        toggleTodo={() => {
+          if (activeBlock !== null) {
+            const el = document.querySelector(`div[data-uid="${activeBlock}"] span`);
+            if (el) toggleTodo(activeBlock, el);
           }
         }}
       />

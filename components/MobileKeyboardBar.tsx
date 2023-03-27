@@ -2,7 +2,15 @@
 import { useRef, useState, useEffect } from "react";
 import { showKeyboardBar } from "../lib/env";
 
-const MobileKeyboardBar = ({ indent, dedent }: { indent: () => void; dedent: () => void }) => {
+const MobileKeyboardBar = ({
+  indent,
+  dedent,
+  toggleTodo,
+}: {
+  indent: () => void;
+  dedent: () => void;
+  toggleTodo: () => void;
+}) => {
   const height = 50;
   const [bar, setBar] = useState(null);
   useEffect(() => {
@@ -47,6 +55,15 @@ const MobileKeyboardBar = ({ indent, dedent }: { indent: () => void; dedent: () 
         }}
       >
         indent
+      </button>
+      <button
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={(e) => {
+          e.preventDefault();
+          toggleTodo();
+        }}
+      >
+        toggle todo
       </button>
     </div>
   );

@@ -37,17 +37,16 @@ export function BlockView({
   dedent,
   setActiveBlock,
   createBelow,
-}: // updateString,
-{
+  updateString,
+}: {
   block: Block;
   indent: (uid: string) => void;
   dedent: (uid: string) => void;
   setActiveBlock: (uid: string) => void;
   createBelow: (uid: string) => void;
-  // updateString: (uid: string, string: string) => void;
+  updateString: (uid: string, string: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { trigger } = useSWRMutation("/api/write", updateBlock);
   const ref = useRef<HTMLSpanElement>(null);
   const uid = block.uid;
   const [isActive, _setActive] = useState(false);
@@ -63,14 +62,10 @@ export function BlockView({
     ref.current.innerText = block.string;
   }, [block]);
 
-  const updateString = (str: string) => {
-    trigger([uid, str]);
-  };
-
   function toggleTodo() {
     const newString = toggleTodoString(ref.current.innerText);
     ref.current.innerText = newString;
-    updateString(newString);
+    updateString(uid, newString);
   }
 
   const buttonClass = styles.toggle + " " + (isExpanded ? styles.expanded : "");
@@ -93,7 +88,7 @@ export function BlockView({
           onFocus={() => setActive(true)}
           onBlur={() => setActive(false)}
           onInput={(e) => {
-            updateString(e.currentTarget.innerText);
+            updateString(uid, e.currentTarget.innerText);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -127,7 +122,7 @@ export function BlockView({
               dedent={dedent}
               setActiveBlock={setActiveBlock}
               createBelow={createBelow}
-              // updateString={updateString}
+              updateString={updateString}
             />
           ))}
         </ul>
