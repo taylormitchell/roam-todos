@@ -1,5 +1,6 @@
 import Head from "next/head";
 import "../components/MobileKeyboardBar.css";
+import "../styles/globals.css";
 
 function App({ Component, pageProps }) {
   return (

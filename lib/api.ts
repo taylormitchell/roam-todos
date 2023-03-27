@@ -50,7 +50,7 @@ export async function query<T = any>(query: string, args = []): Promise<T[]> {
     }),
   });
   const data = await r.json();
-  return data.result.map((row: any[]) => row[0]) as T[];
+  return (data.result || []).map((row: any[]) => row[0]) as T[];
 }
 
 export async function getChildrenOfBlock(uid: string) {

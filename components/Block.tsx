@@ -37,12 +37,14 @@ export function BlockView({
   dedent,
   setActiveBlock,
   createBelow,
-}: {
+}: // updateString,
+{
   block: Block;
   indent: (uid: string) => void;
   dedent: (uid: string) => void;
   setActiveBlock: (uid: string) => void;
   createBelow: (uid: string) => void;
+  // updateString: (uid: string, string: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { trigger } = useSWRMutation("/api/write", updateBlock);
@@ -61,9 +63,9 @@ export function BlockView({
     ref.current.innerText = block.string;
   }, [block]);
 
-  function updateString(str: string) {
+  const updateString = (str: string) => {
     trigger([uid, str]);
-  }
+  };
 
   function toggleTodo() {
     const newString = toggleTodoString(ref.current.innerText);
@@ -73,14 +75,17 @@ export function BlockView({
 
   const buttonClass = styles.toggle + " " + (isExpanded ? styles.expanded : "");
   return (
-    <li
-      onClick={() => {
-        if (ref.current) {
-          ref.current.focus();
-        }
-      }}
-    >
-      <div className={styles.block} data-uid={uid}>
+    <li>
+      <div
+        className={styles.block}
+        data-uid={uid}
+        onClick={() => {
+          if (ref.current) ref.current.focus();
+        }}
+      >
+        <div className="bullet-container">
+          <div className="bullet" />
+        </div>
         <span
           // className={style["todo-string"]}
           ref={ref}
@@ -113,7 +118,7 @@ export function BlockView({
         )}
       </div>
       {block.children && isExpanded && (
-        <ul>
+        <ul className="block-children">
           {block.children.map((child) => (
             <BlockView
               key={child.uid}
@@ -122,6 +127,7 @@ export function BlockView({
               dedent={dedent}
               setActiveBlock={setActiveBlock}
               createBelow={createBelow}
+              // updateString={updateString}
             />
           ))}
         </ul>

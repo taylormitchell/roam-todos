@@ -1,5 +1,11 @@
 .block {
   position: relative;
+  display: flex;
+}
+
+.block span {
+  min-height: 30px;
+  outline: none;
 }
 
 .toggle {

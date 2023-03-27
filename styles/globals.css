@@ -2,37 +2,47 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
-    Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell,
+    Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
 * {
   box-sizing: border-box;
 }
 
-img {
-  max-width: 100%;
-  height: auto;
-}
-
 h1,
 h2,
 p,
-ul {
+ul,
+li {
   margin: 0;
 }
 
 ul {
-  padding: 0;
+  padding-inline-start: 20px;
+}
+
+li {
   list-style: none;
+  display: flex;
+  flex-direction: column;
 }
 
 button {
   padding: 0.5rem 1rem;
   font-weight: bold;
+}
+
+.bullet-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 8px 5px 0px;
+}
+
+.bullet {
+  height: 7px;
+  width: 7px;
+  border-radius: 50%;
+  background-color: black;
 }

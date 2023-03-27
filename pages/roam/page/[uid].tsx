@@ -22,6 +22,7 @@ async function fetchPage(url: string, uid: string) {
     },
     body: JSON.stringify({ uid }),
   });
+  if (!res.ok) throw new Error(res.statusText);
   return await res.json();
 }
 
@@ -37,10 +38,9 @@ export default function PageView({ uid }) {
     error,
     isLoading,
   } = useSWR<Page>(["/api/page", uid], ([url, page]) => fetchPage(url, uid), {
-    refreshInterval: 5000,
+    refreshInterval: 30_000,
     loadingTimeout: 1000,
   });
-  const { mutate } = useSWRConfig();
   const [activeBlock, setActiveBlock] = useState<string | null>(null);
   // const [activeBlock, setActiveBlock] = useState<HTMLDivElement>();
 
@@ -197,29 +197,60 @@ export default function PageView({ uid }) {
     }
   }
 
+  // function updateString(uid: string, string: string) {
+  //   const newPage = deepCopy(page); // @todo hack
+  //   const q: Block[] = newPage.children;
+  //   while (q.length > 0) {
+  //     const b = q.shift();
+  //     if (b.uid === uid) {
+  //       b.string = string;
+  //       break;
+  //     }
+  //     q.push(...b.children);
+  //   }
+  //   mutatePage(newPage, { revalidate: false });
+  //   fetch("/api/write", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({
+  //       action: "update-block",
+  //       block: {
+  //         uid,
+  //         string,
+  //       },
+  //     }),
+  //   });
+  // }
+
   if (isLoading) {
     return <p>Loading...</p>;
   }
   if (error) {
-    return <p>Failed to load: {error}</p>;
+    return <p>Failed to load</p>;
   }
   return (
     <Layout>
       <Link href="/roam">Back</Link>
       <h2>{page.title}</h2>
       {page.children && (
-        <ul>
-          {page.children.map((child) => (
-            <BlockView
-              key={child.uid}
-              block={child}
-              indent={indent}
-              dedent={dedent}
-              createBelow={createBelow}
-              setActiveBlock={setActiveBlock}
-            />
-          ))}
-        </ul>
+        <div>
+          <ul>
+            {page.children.map((child) => (
+              <BlockView
+                key={child.uid}
+                block={child}
+                indent={indent}
+                dedent={dedent}
+                createBelow={createBelow}
+                setActiveBlock={setActiveBlock}
+                // updateString={updateString}
+              />
+            ))}
+          </ul>
+          <div style={{ height: "500px", width: "100%" }} />
+        </div>
       )}
       <MobileKeyboardBar
         indent={() => {
