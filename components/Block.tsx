@@ -40,6 +40,7 @@ export function BlockView({
   updateBlockString,
   toggleBlockOpen,
   isActiveBlock,
+  deleteBlock,
 }: {
   block: Block;
   indent: (uid: string) => void;
@@ -49,6 +50,7 @@ export function BlockView({
   updateBlockString: (uid: string, string: string) => void;
   toggleBlockOpen: (uid: string) => void;
   isActiveBlock: (uid: string) => boolean;
+  deleteBlock: (uid: string) => void;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const uid = block.uid;
@@ -116,6 +118,9 @@ export function BlockView({
               } else {
                 indent(block.uid);
               }
+            } else if (e.key === "Backspace" && e.currentTarget.innerText.match(/^\s*$/)) {
+              e.preventDefault();
+              deleteBlock(block.uid);
             }
           }}
         ></span>
@@ -138,6 +143,7 @@ export function BlockView({
               updateBlockString={updateBlockString}
               toggleBlockOpen={toggleBlockOpen}
               isActiveBlock={isActiveBlock}
+              deleteBlock={deleteBlock}
             />
           ))}
         </ul>

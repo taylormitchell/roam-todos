@@ -46,21 +46,25 @@ function toggleTodoString(str: string) {
   }
 }
 
-function updateBlockInPage(page: Page, uid: string, update: (b: Block) => Block) {
+function updateBlockInPage(page: Page, uid: string, update: (b: Block) => Block | null) {
   return {
     ...page,
-    children: page.children.map((child) => updateBlockInTree(child as Block, uid, update)),
+    children: page.children
+      .map((child) => updateBlockInTree(child as Block, uid, update))
+      .filter((b) => b),
   };
 }
 
-function updateBlockInTree(block: Block, uid: string, update: (b: Block) => Block) {
+function updateBlockInTree(block: Block, uid: string, update: (b: Block) => Block | null) {
   if (block.uid === uid) {
     return update(block);
   }
   if (block.children) {
     return {
       ...block,
-      children: block.children.map((child) => updateBlockInTree(child as Block, uid, update)),
+      children: block.children
+        .map((child) => updateBlockInTree(child as Block, uid, update))
+        .filter((b) => b),
     };
   }
   return block;
@@ -300,6 +304,25 @@ export default function PageView({ uid }) {
     });
   }
 
+  function deleteBlock(uid: string) {
+    mutatePage(
+      (page) => {
+        return updateBlockInPage(page, uid, (block) => null);
+      },
+      { revalidate: false }
+    );
+    fetch("/api/write", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "delete-block",
+        block: { uid },
+      }),
+    });
+  }
+
   if (isLoading) {
     return <p>Loading...</p>;
   }
@@ -324,6 +347,7 @@ export default function PageView({ uid }) {
                 updateBlockString={updateBlockString}
                 toggleBlockOpen={toggleBlockOpen}
                 isActiveBlock={(uid: string) => activeBlock === uid}
+                deleteBlock={deleteBlock}
               />
             ))}
           </ul>
