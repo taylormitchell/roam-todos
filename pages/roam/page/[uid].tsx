@@ -6,6 +6,7 @@ import useSWR from "swr";
 import MobileKeyboardBar from "../../../components/MobileKeyboardBar";
 import Link from "next/link";
 import { ApiResult, isError } from "../../../lib/types";
+import { debounce } from "lodash";
 
 export const getServerSideProps = async ({ params }) => {
   return {
@@ -53,7 +54,7 @@ export default function PageView({ uid }) {
     error,
     isLoading,
   } = useSWR<Page, Error>(["/api/page", uid], ([url, page]) => fetchPage(url, uid), {
-    refreshInterval: 5000,
+    refreshInterval: 30_000,
     loadingTimeout: 1000,
   });
   const [activeBlock, setActiveBlock] = useState<string | null>(null);
@@ -212,7 +213,7 @@ export default function PageView({ uid }) {
     }
   }
 
-  function updateString(uid: string, string: string) {
+  const updateBlockString = (uid: string, string: string) => {
     const newPage = deepCopy(page); // @todo hack
     const q: Block[] = [...newPage.children];
     while (q.length > 0) {
@@ -237,13 +238,7 @@ export default function PageView({ uid }) {
         },
       }),
     });
-  }
-
-  function toggleTodo(uid: string, el: HTMLSpanElement) {
-    const newString = toggleTodoString(el.innerText);
-    el.innerText = newString;
-    updateString(uid, newString);
-  }
+  };
 
   if (isLoading) {
     return <p>Loading...</p>;
@@ -266,7 +261,7 @@ export default function PageView({ uid }) {
                 dedent={dedent}
                 createBelow={createBelow}
                 setActiveBlock={setActiveBlock}
-                updateString={updateString}
+                updateBlockString={updateBlockString}
               />
             ))}
           </ul>
@@ -291,7 +286,13 @@ export default function PageView({ uid }) {
             const el = document.querySelector(
               `div[data-uid="${activeBlock}"] span`
             ) as HTMLSpanElement;
-            if (el) toggleTodo(activeBlock, el);
+            if (!el) return;
+            const string = toggleTodoString(el.innerText);
+            el.innerText = string;
+            // @todo I ideally we wouldn't need this call cause any change
+            // to the element would trigger an update from inside the block
+            // component
+            updateBlockString(activeBlock, string);
           }
         }}
       />

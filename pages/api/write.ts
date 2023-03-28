@@ -10,6 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: "Action is required" });
   }
   try {
+    console.debug("Writing to Roam", body);
     await fetch(`https://api.roamresearch.com/api/graph/second_brain/write`, {
       method: "POST",
       headers: {

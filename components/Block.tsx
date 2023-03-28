@@ -1,7 +1,7 @@
-import useSWRMutation from "swr/mutation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import styles from "../styles/roam.module.css";
 import { Block } from "../lib/model";
+import { debounce } from "lodash";
 
 export async function updateBlock(url: string, { arg }) {
   const [uid, string] = arg;
@@ -37,14 +37,14 @@ export function BlockView({
   dedent,
   setActiveBlock,
   createBelow,
-  updateString,
+  updateBlockString,
 }: {
   block: Block;
   indent: (uid: string) => void;
   dedent: (uid: string) => void;
   setActiveBlock: (uid: string) => void;
   createBelow: (uid: string) => void;
-  updateString: (uid: string, string: string) => void;
+  updateBlockString: (uid: string, string: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
@@ -55,18 +55,27 @@ export function BlockView({
     setActiveBlock(uid);
   }
 
+  const updateString = useCallback(
+    debounce((string) => {
+      updateBlockString(block.uid, string);
+    }, 2000),
+    [block.uid, updateBlockString]
+  );
+  const toggleTodo = useCallback(
+    (el: HTMLSpanElement) => {
+      const string = toggleTodoString(el.innerText);
+      el.innerText = string;
+      updateString(string);
+    },
+    [updateString]
+  );
+
   // Set string and checked state from todo string
   useEffect(() => {
     if (isActive) return;
     if (!ref.current) return;
     ref.current.innerText = block.string;
   }, [block]);
-
-  function toggleTodo() {
-    const newString = toggleTodoString(ref.current.innerText);
-    ref.current.innerText = newString;
-    updateString(uid, newString);
-  }
 
   const buttonClass = styles.toggle + " " + (isExpanded ? styles.expanded : "");
   return (
@@ -88,13 +97,13 @@ export function BlockView({
           onFocus={() => setActive(true)}
           onBlur={() => setActive(false)}
           onInput={(e) => {
-            updateString(uid, e.currentTarget.innerText);
+            updateString(e.currentTarget.innerText);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              if (e.shiftKey) {
-                toggleTodo();
+              if (e.metaKey) {
+                toggleTodo(e.currentTarget);
               } else {
                 createBelow(block.uid);
               }
@@ -122,7 +131,7 @@ export function BlockView({
               dedent={dedent}
               setActiveBlock={setActiveBlock}
               createBelow={createBelow}
-              updateString={updateString}
+              updateBlockString={updateBlockString}
             />
           ))}
         </ul>
