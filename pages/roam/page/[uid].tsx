@@ -1,10 +1,11 @@
 import Layout from "../../../components/layout";
 import { useState } from "react";
-import { Block, Page } from "../../../lib/model";
+import { Block, Page, PageWithChildren } from "../../../lib/model";
 import { BlockView } from "../../../components/Block";
-import useSWR, { useSWRConfig } from "swr";
+import useSWR from "swr";
 import MobileKeyboardBar from "../../../components/MobileKeyboardBar";
 import Link from "next/link";
+import { ApiResult, isError } from "../../../lib/types";
 
 export const getServerSideProps = async ({ params }) => {
   return {
@@ -14,7 +15,7 @@ export const getServerSideProps = async ({ params }) => {
   };
 };
 
-async function fetchPage(url: string, uid: string) {
+async function fetchPage(url: string, uid: string): Promise<PageWithChildren> {
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -22,8 +23,12 @@ async function fetchPage(url: string, uid: string) {
     },
     body: JSON.stringify({ uid }),
   });
-  if (!res.ok) throw new Error(res.statusText);
-  return await res.json();
+  const data: ApiResult<PageWithChildren> = await res.json();
+  if (isError(data)) {
+    throw new Error(data.error);
+  } else {
+    return data.value;
+  }
 }
 
 // @todo this is a hack
@@ -47,8 +52,8 @@ export default function PageView({ uid }) {
     mutate: mutatePage,
     error,
     isLoading,
-  } = useSWR<Page>(["/api/page", uid], ([url, page]) => fetchPage(url, uid), {
-    refreshInterval: 30_000,
+  } = useSWR<Page, Error>(["/api/page", uid], ([url, page]) => fetchPage(url, uid), {
+    refreshInterval: 5000,
     loadingTimeout: 1000,
   });
   const [activeBlock, setActiveBlock] = useState<string | null>(null);
@@ -244,7 +249,7 @@ export default function PageView({ uid }) {
     return <p>Loading...</p>;
   }
   if (error) {
-    return <p>Failed to load</p>;
+    return <p>Error loading page: {error.message}</p>;
   }
   return (
     <Layout>

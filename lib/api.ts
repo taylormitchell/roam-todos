@@ -1,5 +1,6 @@
 import invariant from "tiny-invariant";
 import { BlockDb, BlockWithChildren, Block } from "./model";
+import { ApiResult, isError } from "./types";
 
 const token = process.env.ROAM_TOKEN;
 invariant(token !== undefined, "ROAM_TOKEN is not set");
@@ -36,7 +37,7 @@ export function createTree(blocks: BlockDb[]): BlockWithChildren[] {
   return roots;
 }
 
-export async function query<T = any>(query: string, args = []): Promise<T[]> {
+export async function query<T = any>(query: string, args = []): Promise<ApiResult<T[]>> {
   const r = await fetch(`https://api.roamresearch.com/api/graph/second_brain/q`, {
     method: "POST",
     headers: {
@@ -50,11 +51,14 @@ export async function query<T = any>(query: string, args = []): Promise<T[]> {
     }),
   });
   const data = await r.json();
-  return (data.result || []).map((row: any[]) => row[0]) as T[];
+  if (!r.ok) {
+    return { error: data.message || `${r.status} ${r.statusText}` };
+  }
+  return { value: data.result.map((row: any[]) => row[0]) as T[] };
 }
 
-export async function getChildrenOfBlock(uid: string) {
-  const blocks = await query<BlockDb>(`[
+export async function getChildrenOfBlock(uid: string): Promise<ApiResult<BlockWithChildren[]>> {
+  const result = await query<BlockDb>(`[
       :find (pull ?e [*])
       :where
           [?e :block/uid ?uid]
@@ -62,6 +66,9 @@ export async function getChildrenOfBlock(uid: string) {
           [?e :block/parents ?parent]
           [?parent :block/uid "${uid}"]
       ]`);
-  const children = createTree(blocks).sort((a, b) => a.order - b.order);
-  return children;
+  if (isError(result)) {
+    return { error: result.error };
+  }
+  const children = createTree(result.value).sort((a, b) => a.order - b.order);
+  return { value: children };
 }

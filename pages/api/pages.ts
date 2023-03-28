@@ -1,7 +1,12 @@
 import { query } from "../../lib/api";
 import { Page, PageDb } from "../../lib/model";
+import { NextApiRequest, NextApiResponse } from "next";
+import { ApiResult, isError } from "../../lib/types";
 
-export default async function handler(req, res) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ApiResult<Page[]>>
+) {
   const limit = req.body.limit || Infinity;
   const result = await query<PageDb>(`[
         :find (pull ?e [*])
@@ -9,7 +14,10 @@ export default async function handler(req, res) {
             [?e :block/uid ?uid]
             [?e :node/title]
     ]`);
-  const pages: Page[] = result
+  if (isError(result)) {
+    return res.status(500).json(result);
+  }
+  const pages: Page[] = result.value
     .map((page) => {
       return {
         id: page[":db/id"],
@@ -22,5 +30,5 @@ export default async function handler(req, res) {
     })
     .sort((a, b) => b.editTime - a.editTime)
     .slice(0, limit);
-  res.send(pages);
+  return res.json({ value: pages });
 }
