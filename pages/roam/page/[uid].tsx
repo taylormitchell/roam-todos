@@ -6,7 +6,6 @@ import useSWR from "swr";
 import MobileKeyboardBar from "../../../components/MobileKeyboardBar";
 import Link from "next/link";
 import { ApiResult, isError } from "../../../lib/types";
-import { debounce } from "lodash";
 
 export const getServerSideProps = async ({ params }) => {
   return {
@@ -47,6 +46,26 @@ function toggleTodoString(str: string) {
   }
 }
 
+function updateBlockInPage(page: Page, uid: string, update: (b: Block) => Block) {
+  return {
+    ...page,
+    children: page.children.map((child) => updateBlockInTree(child as Block, uid, update)),
+  };
+}
+
+function updateBlockInTree(block: Block, uid: string, update: (b: Block) => Block) {
+  if (block.uid === uid) {
+    return update(block);
+  }
+  if (block.children) {
+    return {
+      ...block,
+      children: block.children.map((child) => updateBlockInTree(child as Block, uid, update)),
+    };
+  }
+  return block;
+}
+
 export default function PageView({ uid }) {
   const {
     data: page,
@@ -74,6 +93,7 @@ export default function PageView({ uid }) {
           if (sibling) {
             parent.children.splice(i, 1);
             sibling.children.push(current);
+            sibling.open = true;
           }
           break;
         }
@@ -83,6 +103,7 @@ export default function PageView({ uid }) {
       }
     }
     if (sibling) {
+      // Move block under sibling
       mutatePage(newPage, { revalidate: false });
       fetch("/api/write", {
         method: "POST",
@@ -97,6 +118,20 @@ export default function PageView({ uid }) {
           location: {
             "parent-uid": sibling.uid,
             order: sibling.children.length,
+          },
+        }),
+      });
+      // Open sibling
+      fetch("/api/write", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "update-block",
+          block: {
+            uid,
+            open: true,
           },
         }),
       });
@@ -240,6 +275,31 @@ export default function PageView({ uid }) {
     });
   };
 
+  function toggleBlockOpen(uid: string) {
+    let newOpen = false;
+    const newPage = updateBlockInPage(page, uid, (block) => {
+      newOpen = !block.open;
+      return {
+        ...block,
+        open: newOpen,
+      };
+    });
+    mutatePage(newPage, { revalidate: false });
+    fetch("/api/write", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "update-block",
+        block: {
+          uid,
+          open: newOpen,
+        },
+      }),
+    });
+  }
+
   if (isLoading) {
     return <p>Loading...</p>;
   }
@@ -262,6 +322,8 @@ export default function PageView({ uid }) {
                 createBelow={createBelow}
                 setActiveBlock={setActiveBlock}
                 updateBlockString={updateBlockString}
+                toggleBlockOpen={toggleBlockOpen}
+                isActiveBlock={(uid: string) => activeBlock === uid}
               />
             ))}
           </ul>

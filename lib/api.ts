@@ -19,6 +19,7 @@ export function createTree(blocks: BlockDb[]): BlockWithChildren[] {
         children: [],
         editTime: block[":edit/time"],
         createTime: block[":create/time"],
+        open: block[":block/open"]
       },
       childrenIds: (block[":block/children"] || []).map((child) => child[":db/id"]),
     });

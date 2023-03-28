@@ -7,6 +7,7 @@ export type Block = {
   children: Block[];
   editTime?: number;
   createTime?: number;
+  open: boolean;
 };
 
 export type BlockDb = {
@@ -15,6 +16,7 @@ export type BlockDb = {
   ":block/string": string;
   ":block/order": number;
   ":block/page": string;
+  ":block/open": boolean;
   ":block/children": { ":db/id": number }[];
   ":edit/time": number;
   ":create/time": number;

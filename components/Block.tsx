@@ -38,6 +38,8 @@ export function BlockView({
   setActiveBlock,
   createBelow,
   updateBlockString,
+  toggleBlockOpen,
+  isActiveBlock,
 }: {
   block: Block;
   indent: (uid: string) => void;
@@ -45,17 +47,18 @@ export function BlockView({
   setActiveBlock: (uid: string) => void;
   createBelow: (uid: string) => void;
   updateBlockString: (uid: string, string: string) => void;
+  toggleBlockOpen: (uid: string) => void;
+  isActiveBlock: (uid: string) => boolean;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const uid = block.uid;
-  const [isActive, _setActive] = useState(false);
+  const isActive = isActiveBlock(uid);
   function setActive(bool: boolean) {
-    _setActive(bool);
     setActiveBlock(uid);
   }
 
   const updateString = useCallback(
+    // @todo I really just want to debounce the api calls, not the cache updates
     debounce((string) => {
       updateBlockString(block.uid, string);
     }, 2000),
@@ -72,12 +75,15 @@ export function BlockView({
 
   // Set string and checked state from todo string
   useEffect(() => {
-    if (isActive) return;
-    if (!ref.current) return;
-    ref.current.innerText = block.string;
-  }, [block]);
+    if (ref.current && document.activeElement !== ref.current) {
+      ref.current.innerText = block.string;
+      if (isActive) {
+        ref.current.focus();
+      }
+    }
+  }, [block.string, isActive]);
 
-  const buttonClass = styles.toggle + " " + (isExpanded ? styles.expanded : "");
+  const buttonClass = styles.toggle + " " + (block.open ? styles.expanded : "");
   return (
     <li>
       <div className={styles.block} data-uid={uid}>
@@ -89,7 +95,9 @@ export function BlockView({
           ref={ref}
           contentEditable
           onFocus={() => setActive(true)}
-          onBlur={() => setActive(false)}
+          onBlur={() => {
+            if (isActive) setActive(false);
+          }}
           onInput={(e) => {
             updateString(e.currentTarget.innerText);
           }}
@@ -113,11 +121,11 @@ export function BlockView({
         ></span>
         <div className={styles["toggle-container"]}>
           {block.children.length > 0 && (
-            <button className={buttonClass} onClick={() => setIsExpanded(!isExpanded)} />
+            <button className={buttonClass} onClick={() => toggleBlockOpen(uid)} />
           )}
         </div>
       </div>
-      {block.children && isExpanded && (
+      {block.children && block.open && (
         <ul className="block-children">
           {block.children.map((child) => (
             <BlockView
@@ -128,6 +136,8 @@ export function BlockView({
               setActiveBlock={setActiveBlock}
               createBelow={createBelow}
               updateBlockString={updateBlockString}
+              toggleBlockOpen={toggleBlockOpen}
+              isActiveBlock={isActiveBlock}
             />
           ))}
         </ul>
