@@ -80,13 +80,7 @@ export function BlockView({
   const buttonClass = styles.toggle + " " + (isExpanded ? styles.expanded : "");
   return (
     <li>
-      <div
-        className={styles.block}
-        data-uid={uid}
-        onClick={() => {
-          if (ref.current) ref.current.focus();
-        }}
-      >
+      <div className={styles.block} data-uid={uid}>
         <div className="bullet-container">
           <div className="bullet" />
         </div>
@@ -117,9 +111,11 @@ export function BlockView({
             }
           }}
         ></span>
-        {block.children.length > 0 && (
-          <button className={buttonClass} onClick={() => setIsExpanded(!isExpanded)} />
-        )}
+        <div className={styles["toggle-container"]}>
+          {block.children.length > 0 && (
+            <button className={buttonClass} onClick={() => setIsExpanded(!isExpanded)} />
+          )}
+        </div>
       </div>
       {block.children && isExpanded && (
         <ul className="block-children">

@@ -16,6 +16,7 @@ function App({ Component, pageProps }) {
           height: "100%",
           width: "100%",
           overflowY: "scroll",
+          overflowX: "hidden",
         }}
       >
         <Component {...pageProps} />
