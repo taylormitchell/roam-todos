@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useContext } from "react";
 import styles from "../styles/roam.module.css";
 import { Block } from "../lib/model";
 import { debounce } from "lodash";
+import BlockContext from "./BlockContext";
 
 export async function updateBlock(url: string, { arg }) {
   const [uid, string] = arg;
@@ -21,7 +22,7 @@ export async function updateBlock(url: string, { arg }) {
   return res.json();
 }
 
-function toggleTodoString(str: string) {
+export function toggleTodoString(str: string) {
   if (str.startsWith("{{[[TODO]]}}")) {
     return str.replace("{{[[TODO]]}}", "{{[[DONE]]}}");
   } else if (str.startsWith("{{[[DONE]]}}")) {
@@ -31,27 +32,18 @@ function toggleTodoString(str: string) {
   }
 }
 
-export function BlockView({
-  block,
-  indent,
-  dedent,
-  setActiveBlock,
-  createBelow,
-  updateBlockString,
-  toggleBlockOpen,
-  isActiveBlock,
-  deleteBlock,
-}: {
-  block: Block;
-  indent: (uid: string) => void;
-  dedent: (uid: string) => void;
-  setActiveBlock: (uid: string) => void;
-  createBelow: (uid: string) => void;
-  updateBlockString: (uid: string, string: string) => void;
-  toggleBlockOpen: (uid: string) => void;
-  isActiveBlock: (uid: string) => boolean;
-  deleteBlock: (uid: string) => void;
-}) {
+export function BlockView({ block }: { block: Block }) {
+  const {
+    indent,
+    dedent,
+    createBelow,
+    updateBlockString,
+    deleteBlock,
+    toggleBlockOpen,
+    isActiveBlock,
+    setActiveBlock,
+  } = useContext(BlockContext);
+
   const ref = useRef<HTMLSpanElement>(null);
   const uid = block.uid;
   const isActive = isActiveBlock(uid);
@@ -133,18 +125,7 @@ export function BlockView({
       {block.children && block.open && (
         <ul className="block-children">
           {block.children.map((child) => (
-            <BlockView
-              key={child.uid}
-              block={child}
-              indent={indent}
-              dedent={dedent}
-              setActiveBlock={setActiveBlock}
-              createBelow={createBelow}
-              updateBlockString={updateBlockString}
-              toggleBlockOpen={toggleBlockOpen}
-              isActiveBlock={isActiveBlock}
-              deleteBlock={deleteBlock}
-            />
+            <BlockView key={child.uid} block={child} />
           ))}
         </ul>
       )}

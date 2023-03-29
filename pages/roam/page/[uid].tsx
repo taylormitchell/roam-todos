@@ -1,11 +1,12 @@
 import Layout from "../../../components/layout";
 import { useState } from "react";
 import { Block, Page, PageWithChildren } from "../../../lib/model";
-import { BlockView } from "../../../components/Block";
+import { BlockView, toggleTodoString } from "../../../components/Block";
 import useSWR from "swr";
 import MobileKeyboardBar from "../../../components/MobileKeyboardBar";
 import Link from "next/link";
 import { ApiResult, isError } from "../../../lib/types";
+import BlockContext from "../../../components/BlockContext";
 
 export const getServerSideProps = async ({ params }) => {
   return {
@@ -34,16 +35,6 @@ async function fetchPage(url: string, uid: string): Promise<PageWithChildren> {
 // @todo this is a hack
 function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj));
-}
-
-function toggleTodoString(str: string) {
-  if (str.startsWith("{{[[TODO]]}}")) {
-    return str.replace("{{[[TODO]]}}", "{{[[DONE]]}}");
-  } else if (str.startsWith("{{[[DONE]]}}")) {
-    return str.replace("{{[[DONE]]}}", "");
-  } else {
-    return "{{[[TODO]]}}" + (str[0] !== " " ? " " : "") + str;
-  }
 }
 
 function updateBlockInPage(page: Page, uid: string, update: (b: Block) => Block | null) {
@@ -323,6 +314,10 @@ export default function PageView({ uid }) {
     });
   }
 
+  function isActiveBlock(uid: string) {
+    return activeBlock === uid;
+  }
+
   if (isLoading) {
     return <p>Loading...</p>;
   }
@@ -334,25 +329,38 @@ export default function PageView({ uid }) {
       <Link href="/roam">Back</Link>
       <h2>{page.title}</h2>
       {page.children && (
-        <div>
-          <ul>
-            {page.children.map((child) => (
-              <BlockView
-                key={child.uid}
-                block={child}
-                indent={indent}
-                dedent={dedent}
-                createBelow={createBelow}
-                setActiveBlock={setActiveBlock}
-                updateBlockString={updateBlockString}
-                toggleBlockOpen={toggleBlockOpen}
-                isActiveBlock={(uid: string) => activeBlock === uid}
-                deleteBlock={deleteBlock}
-              />
-            ))}
-          </ul>
-          <div style={{ height: "500px", width: "100%" }} />
-        </div>
+        <BlockContext.Provider
+          value={{
+            indent,
+            dedent,
+            createBelow,
+            deleteBlock,
+            updateBlockString,
+            toggleBlockOpen,
+            isActiveBlock,
+            setActiveBlock,
+          }}
+        >
+          <div>
+            <ul>
+              {page.children.map((child) => (
+                <BlockView
+                  key={child.uid}
+                  block={child}
+                  indent={indent}
+                  dedent={dedent}
+                  createBelow={createBelow}
+                  setActiveBlock={setActiveBlock}
+                  updateBlockString={updateBlockString}
+                  toggleBlockOpen={toggleBlockOpen}
+                  isActiveBlock={(uid: string) => activeBlock === uid}
+                  deleteBlock={deleteBlock}
+                />
+              ))}
+            </ul>
+            <div style={{ height: "500px", width: "100%" }} />
+          </div>
+        </BlockContext.Provider>
       )}
       <MobileKeyboardBar
         indent={() => {
