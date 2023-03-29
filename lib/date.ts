@@ -1,9 +1,16 @@
-export function getDateString(i = 0) {
+export function getDateString(i = 0, format = "yyyy-mm-dd") {
   const today = new Date();
-  const yyyy = today.getFullYear();
+  const yyyy = today.getFullYear().toString();
   const mm = String(today.getMonth() + 1).padStart(2, "0"); // Months are 0-based, so we add 1
   const dd = String(today.getDate() + i).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return format.replace("yyyy", yyyy).replace("mm", mm).replace("dd", dd);
+}
+
+export function getDailyPageId(date: Date) {
+  const yyyy = date.getFullYear().toString();
+  const mm = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-based, so we add 1
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${mm}-${dd}-${yyyy}`;
 }
 
 const monthNames = [

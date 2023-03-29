@@ -8,7 +8,7 @@ const BlockContext = createContext<{
   updateBlockString: (uid: string, string: string) => void;
   toggleBlockOpen: (uid: string) => void;
   isActiveBlock: (uid: string) => boolean;
-  setActiveBlock: (uid: string) => void;
+  setActiveBlock: (uid: string | null) => void;
 }>(null);
 
 export default BlockContext;

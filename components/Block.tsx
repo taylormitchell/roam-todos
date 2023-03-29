@@ -32,6 +32,31 @@ export function toggleTodoString(str: string) {
   }
 }
 
+// @todo this is a bit of a mess
+function BlockContent({ uid, string }: { uid: string; string: string }) {
+  const { setActiveBlock, updateBlockString } = useContext(BlockContext);
+  const todoMatch = string.match(/^{{\[\[(TODO|DONE)\]\]}}/);
+  const checked = todoMatch && todoMatch[1] === "DONE";
+  function flipTodo() {
+    if (!todoMatch) return;
+    if (checked) {
+      updateBlockString(uid, string.replace("{{[[DONE]]}}", "{{[[TODO]]}}"));
+    } else {
+      updateBlockString(uid, string.replace("{{[[TODO]]}}", "{{[[DONE]]}}"));
+    }
+  }
+  if (todoMatch) {
+    return (
+      <span>
+        <input type="checkbox" checked={checked} onChange={flipTodo} />
+        <span onClick={() => setActiveBlock(uid)}>{string.slice(todoMatch[0].length)}</span>
+      </span>
+    );
+  } else {
+    return <span onClick={() => setActiveBlock(uid)}>{string}</span>;
+  }
+}
+
 export function BlockView({ block }: { block: Block }) {
   const {
     indent,
@@ -48,7 +73,7 @@ export function BlockView({ block }: { block: Block }) {
   const uid = block.uid;
   const isActive = isActiveBlock(uid);
   function setActive(bool: boolean) {
-    setActiveBlock(uid);
+    setActiveBlock(bool ? uid : null);
   }
 
   const updateString = useCallback(
@@ -77,6 +102,7 @@ export function BlockView({ block }: { block: Block }) {
     }
   }, [block.string, isActive]);
 
+  console.log({ block, isActive });
   const buttonClass = styles.toggle + " " + (block.open ? styles.expanded : "");
   return (
     <li>
@@ -84,38 +110,43 @@ export function BlockView({ block }: { block: Block }) {
         <div className="bullet-container">
           <div className="bullet" />
         </div>
-        <span
-          // className={style["todo-string"]}
-          ref={ref}
-          contentEditable
-          onFocus={() => setActive(true)}
-          onBlur={() => {
-            if (isActive) setActive(false);
-          }}
-          onInput={(e) => {
-            updateString(e.currentTarget.innerText);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              if (e.metaKey) {
-                toggleTodo(e.currentTarget);
-              } else {
-                createBelow(block.uid);
+        {isActive ? (
+          <span
+            // className={style["todo-string"]}
+            ref={ref}
+            contentEditable
+            onBlur={() => {
+              if (isActive) {
+                setActive(false);
               }
-            } else if (e.key === "Tab") {
-              e.preventDefault();
-              if (e.shiftKey) {
-                dedent(block.uid);
-              } else {
-                indent(block.uid);
+            }}
+            onInput={(e) => {
+              updateString(e.currentTarget.innerText);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (e.metaKey) {
+                  toggleTodo(e.currentTarget);
+                } else {
+                  createBelow(block.uid);
+                }
+              } else if (e.key === "Tab") {
+                e.preventDefault();
+                if (e.shiftKey) {
+                  dedent(block.uid);
+                } else {
+                  indent(block.uid);
+                }
+              } else if (e.key === "Backspace" && e.currentTarget.innerText.match(/^\s*$/)) {
+                e.preventDefault();
+                deleteBlock(block.uid);
               }
-            } else if (e.key === "Backspace" && e.currentTarget.innerText.match(/^\s*$/)) {
-              e.preventDefault();
-              deleteBlock(block.uid);
-            }
-          }}
-        ></span>
+            }}
+          ></span>
+        ) : (
+          <BlockContent uid={block.uid} string={block.string} />
+        )}
         <div className={styles["toggle-container"]}>
           {block.children.length > 0 && (
             <button className={buttonClass} onClick={() => toggleBlockOpen(uid)} />
